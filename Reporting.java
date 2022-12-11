@@ -2,6 +2,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class Reporting {
 
@@ -120,73 +121,90 @@ public class Reporting {
                 Statement stmt = connection.createStatement();
                 String str = "SELECT admissionDate, totalPayment, patient_SSN FROM Admission WHERE num = " + admissionNumber;
                 String str2 = "SELECT rmNum, startDate, endDate FROM StayIn WHERE adNum = " + admissionNumber;
+                String str3 = "SELECT DISTINCT drID FROM Examine WHERE adNum = " + admissionNumber;
+
                 ResultSet rset = stmt.executeQuery(str);
 
-                int admissionDate = -1;
-                int totalPayment = -1;
-                int patient_SSN = -1;
-
-
-                // Rooms:
-                // RoomNum:     FromDate:     ToDate:
-                // RoomNum:     FromDate:     ToDate:
-                // RoomNum:     FromDate:     ToDate:
+                String admissionDate = "";
+                String totalPayment = "";
+                String patient_SSN = "";
 
                 while (rset.next()) {
-                    admissionDate = rset.getInt("admissionDate");
-                    totalPayment = rset.getInt("totalPayment");
-                    patient_SSN = rset.getInt("patient_SSN");
+                    admissionDate = rset.getString("admissionDate");
+                    totalPayment = rset.getString("totalPayment");
+                    patient_SSN = rset.getString("patient_SSN");
                 }
                 rset.close();
 
+                System.out.println();
+                System.out.println("Admission Number: " + admissionNumber);
+                System.out.println("Patient SSN: " + patient_SSN);
+                System.out.println("Admission Date (start date): " + admissionDate);
+                System.out.println("Total Payment: " + totalPayment);
+
+
                 ResultSet rset2 = stmt.executeQuery(str2);
 
-                int rmNum = -1;
-                Date startDate = null;
-                Date endDate = null;
+                ArrayList<Integer> rmNums = new ArrayList<>();
+                ArrayList<Date> startDates = new ArrayList<>();
+                ArrayList<Date> endDates = new ArrayList<>();
 
                 while (rset2.next()) {
-                    rmNum = rset2.getInt("gender");
-                    startDate = rset2.getDate("startDate");
-                    endDate = rset2.getDate("endDate");
+                    rmNums.add(rset2.getInt("rmNum"));
+                    startDates.add(rset2.getDate("startDate"));
+                    endDates.add(rset2.getDate("endDate"));
                 }
                 rset2.close();
+
+                System.out.println("Rooms: ");
+
+                for (int i = 0; i < rmNums.size(); i++) {
+                    System.out.println("     Room: " + rmNums.get(i) + "     " + "From Date: " + startDates.get(i) + "     " + "End Date: " + endDates.get(i));
+                }
+
+                ResultSet rset3 = stmt.executeQuery(str3);
+                ArrayList<Integer> drIDs = new ArrayList<>();
+
+                while (rset3.next()) {
+                    drIDs.add(rset3.getInt("drID"));
+                }
+                rset3.close();
+
+                System.out.println("Doctors examined the patient in this admission: ");
+
+                for (Integer drID : drIDs) {
+                    System.out.println("     Doctor: " + drID);
+                }
             }
-
-            // TODO program needs to execute a query here over the admission table and print the following:
-                // TODO the Doctor IDS printed need to be unique (no repeats)
-
-                // Admission Number:
-                // Patient SSN:
-                // Admission Date (start date):
-                // Total Payment:
-
-                // Rooms:
-                    // RoomNum:     FromDate:     ToDate:
-                    // RoomNum:     FromDate:     ToDate:
-                    // RoomNum:     FromDate:     ToDate:
-
-                // Doctors examined the patient in this admission:
-                    // Doctor ID:
-                    // Doctor ID:
-                    // Doctor ID:
 
             reader.close();
             System.exit(0);
         }
         else if (args[2].equals("4")) {
-            System.out.println("Enter Admission Number:");
+            System.out.print("Enter Admission Number: ");
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String admissionNumber = reader.readLine();
-            System.out.println("You entered: " + admissionNumber);
 
             System.out.println();
 
-            System.out.println("Enter the new total payment:");
+            System.out.print("Enter the new total payment: ");
             String newTotalPayment = reader.readLine();
-            System.out.println("You entered: " + newTotalPayment);
 
-            // TODO program needs to execute a query that updates the total payment for the given admissions number
+            // connection to database
+            Connection connection = returnConnection();
+
+            if (connection != null) {
+                Statement stmt = connection.createStatement();
+
+                String str = "UPDATE Admission SET totalPayment = " + newTotalPayment + " WHERE num = " + admissionNumber;
+                int rset = stmt.executeUpdate(str);
+
+                if (rset == 1) {
+                    System.out.println();
+                    System.out.println("Successfully updated!");
+                }
+            }
+
             // TODO good to check this with option 3 (execute with this admissions num to see if total payment has been updated)
 
             reader.close();
